@@ -13,7 +13,7 @@ EditTimerDialog::EditTimerDialog(QWidget *parent)
 {
     setWindowTitle(tr("Редагувати Таймер/Будильник"));
     setupUi();
-    
+
     // З'єднання
     connect(typeToggle, &QCheckBox::toggled, this, &EditTimerDialog::on_toggleType_toggled);
     connect(saveButton, &QPushButton::clicked, this, &EditTimerDialog::on_save_clicked);
@@ -30,10 +30,10 @@ void EditTimerDialog::setupUi()
     typeToggle = new QCheckBox(tr("Будильник")); // Не відмічено = Таймер
     nameEdit = new QLineEdit();
     actionPathEdit = new QLineEdit();
-    
+
     nameEdit->setPlaceholderText(tr("Назва таймера (напр., 'Перерва', 'Зустріч')"));
     actionPathEdit->setPlaceholderText(tr("Шлях до програми, яку потрібно запустити (опц.)"));
-    
+
     QPushButton *browseButton = new QPushButton(tr("..."));
     browseButton->setMaximumWidth(40);
     connect(browseButton, &QPushButton::clicked, [this](){
@@ -45,18 +45,18 @@ void EditTimerDialog::setupUi()
 
     // 2. Створення Stacked Widget для часу
     timeStack = new QStackedWidget();
-    
+
     // 2.1. Варіант "Таймер" (Тривалість)
     durationWidget = new QWidget();
     QHBoxLayout *durationLayout = new QHBoxLayout(durationWidget);
     durationHours = new QSpinBox();
     durationMinutes = new QSpinBox();
     durationSeconds = new QSpinBox();
-    
+
     durationHours->setRange(0, 99);
     durationMinutes->setRange(0, 59);
     durationSeconds->setRange(0, 59);
-    
+
     durationLayout->addWidget(new QLabel(tr("Години:")));
     durationLayout->addWidget(durationHours);
     durationLayout->addWidget(new QLabel(tr("Хвилини:")));
@@ -65,9 +65,9 @@ void EditTimerDialog::setupUi()
     durationLayout->addWidget(durationSeconds);
     durationLayout->addStretch();
     durationWidget->setLayout(durationLayout);
-    
+
     timeStack->addWidget(durationWidget); // Індекс 0
-    
+
     // 2.2. Варіант "Будильник" (Час спрацювання)
     alarmWidget = new QWidget();
     QHBoxLayout *alarmLayout = new QHBoxLayout(alarmWidget);
@@ -79,7 +79,7 @@ void EditTimerDialog::setupUi()
     alarmLayout->addWidget(alarmDateTime);
     alarmLayout->addStretch();
     alarmWidget->setLayout(alarmLayout);
-    
+
     timeStack->addWidget(alarmWidget); // Індекс 1
 
     // 3. Компонування
@@ -100,7 +100,7 @@ void EditTimerDialog::setupUi()
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     saveButton = new QPushButton(tr("Зберегти Зміни"));
     cancelButton = new QPushButton(tr("Скасувати"));
-    
+
     buttonLayout->addStretch();
     buttonLayout->addWidget(saveButton);
     buttonLayout->addWidget(cancelButton);
@@ -116,13 +116,13 @@ void EditTimerDialog::setupUi()
 void EditTimerDialog::setTimerData(TimerEntry *entry)
 {
     if (!entry) return;
-    
+
     currentId = entry->id;
     nameEdit->setText(entry->name);
     actionPathEdit->setText(entry->actionPath);
-    
+
     typeToggle->setChecked(entry->isAlarm); // Оновлює typeStack через on_toggleType_toggled
-    
+
     if (entry->isAlarm) {
         // Завантажуємо час спрацювання
         alarmDateTime->setDateTime(QDateTime::fromSecsSinceEpoch(entry->durationSeconds));
@@ -153,10 +153,12 @@ void EditTimerDialog::on_save_clicked()
         QMessageBox::warning(this, tr("Помилка вводу"), tr("Назва таймера не може бути порожньою."));
         return;
     }
-    
+
     bool isAlarm = typeToggle->isChecked();
-    qint64 durationSeconds = 0;
-    
+
+    // !!! Змінено ім'я локальної змінної, щоб не конфліктувати з QSpinBox* durationSeconds !!!
+    qint64 totalDurationSeconds = 0;
+
     if (isAlarm) {
         // Будильник: durationSeconds - це час спрацювання (Unix timestamp)
         QDateTime targetTime = alarmDateTime->dateTime();
@@ -164,23 +166,23 @@ void EditTimerDialog::on_save_clicked()
             QMessageBox::warning(this, tr("Помилка часу"), tr("Час спрацювання будильника має бути у майбутньому."));
             return;
         }
-        durationSeconds = targetTime.toSecsSinceEpoch();
-        
+        totalDurationSeconds = targetTime.toSecsSinceEpoch();
+
     } else {
-        // Таймер: durationSeconds - це загальна тривалість
+        // Таймер: totalDurationSeconds - це загальна тривалість
         int h = durationHours->value();
         int m = durationMinutes->value();
-        int s = durationSeconds->value();
-        durationSeconds = h * 3600 + m * 60 + s;
-        
-        if (durationSeconds <= 0) {
+        int s = durationSeconds->value(); // використовуємо QSpinBox* member
+        totalDurationSeconds = static_cast<qint64>(h) * 3600 + static_cast<qint64>(m) * 60 + static_cast<qint64>(s);
+
+        if (totalDurationSeconds <= 0) {
             QMessageBox::warning(this, tr("Помилка часу"), tr("Тривалість таймера має бути більшою за нуль."));
             return;
         }
     }
-    
+
     // Надсилаємо сигнал про редагування
-    emit timerEdited(currentId, name, durationSeconds, isAlarm, actionPathEdit->text().trimmed());
-    
+    emit timerEdited(currentId, name, totalDurationSeconds, isAlarm, actionPathEdit->text().trimmed());
+
     accept(); // Закриваємо діалог
 }
