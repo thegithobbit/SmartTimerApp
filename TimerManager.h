@@ -44,11 +44,20 @@ public:
 
     // Методи керування
     void addTimer(const QString& name, qint64 durationSeconds, bool isAlarm, const QString& actionPath);
+    // Додаємо метод для редагування (Пріоритет 2)
+    void editTimer(const QString& id, const QString& name, qint64 durationSeconds, bool isAlarm, const QString& actionPath);
     void deleteTimer(const QString& id);
     void startStopTimer(const QString& id, bool start);
     void startAll();
     void stopAll();
     QList<TimerEntry*> getTimers() const;
+
+    // Нові методи для роботи зі збереженням даних (Persistence)
+    void saveTimers() const;
+    void loadTimers();
+
+    // Новий метод для отримання одного таймера за ID (потрібен для редагування)
+    TimerEntry* getTimerEntry(const QString& id) const;
 
 signals:
     // Сигнали для MainWindow (View)
@@ -65,6 +74,10 @@ private:
 
     void emitListUpdate();
     void checkAlarmStatus();
+
+    // Допоміжні методи для JSON-серіалізації
+    QJsonObject timerEntryToJson(const TimerEntry* entry) const;
+    TimerEntry* timerEntryFromJson(const QJsonObject& json) const;
 };
 
 #endif // TIMERMANAGER_H
