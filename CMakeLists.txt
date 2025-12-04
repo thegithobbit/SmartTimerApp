@@ -18,7 +18,9 @@ set(PROJECT_SOURCES
     mainwindow.h
     mainwindow.ui
     TimerManager.cpp  
-    TimerManager.h    
+    TimerManager.h
+    AddTimerDialog.cpp
+    AddTimerDialog.h    
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
