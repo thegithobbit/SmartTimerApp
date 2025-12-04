@@ -157,7 +157,7 @@ void MainWindow::on_startAll_clicked()
 }
 
 // Обробник 3: Стоп усіх
-void void MainWindow::on_stopAll_clicked()
+void MainWindow::on_stopAll_clicked()
 {
     manager->stopAll();
 }
