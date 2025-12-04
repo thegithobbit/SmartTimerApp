@@ -11,6 +11,10 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    // !!! КРОК 1: Встановлюємо ім'я програми для коректного збереження у AppData !!!
+    QCoreApplication::setOrganizationName("MyUniversity");
+    QCoreApplication::setApplicationName("SmartTimerApp");
+
     ui->setupUi(this);
 
     // 1. Ініціалізація компонентів
@@ -284,18 +288,24 @@ void MainWindow::updateCellTime(const QString& id, qint64 remainingTime)
 }
 
 // Обробник 16: Обробка закриття вікна
+// --- Обробник 16: Обробка закриття вікна (ЗБЕРЕЖЕННЯ ДАНИХ) ---
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (trayIcon->isVisible()) {
-        hide(); // Приховуємо вікно у трей
+    manager->saveTimers(); // <--- ЗБЕРЕЖЕННЯ ДАНИХ ПЕРЕД ЗАКРИТТЯМ
+
+    // Якщо іконка в треї видима, приховуємо вікно замість повного закриття
+    if (trayIcon && trayIcon->isVisible()) {
+        hide();
         event->ignore(); // Ігноруємо закриття
+
+        // Показуємо повідомлення, що програма продовжує працювати
         trayIcon->showMessage(
             tr("Smart Timer App"),
-            tr("Програма продовжує працювати у фоновому режимі."),
+            tr("Програма продовжує працювати у фоновому режимі. Натисніть на іконку, щоб відновити."),
             QSystemTrayIcon::Information,
             2000
             );
     } else {
-        event->accept(); // Закриваємо повністю
+        event->accept(); // Повністю закриваємо
     }
 }
