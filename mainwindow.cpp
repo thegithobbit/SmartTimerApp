@@ -1,359 +1,269 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "EditTimerDialog.h"// Все ще потрібен для ініціалізації Qt
-#include <QHeaderView>
-#include <QDateTime>
-#include <QProcess>
-#include <QCloseEvent>
 
-// --- Конструктор / Деструктор ---
+#include <QMessageBox>
+#include <QInputDialog>
+#include <QHeaderView>
+
+// ========================
+//     КОНСТРУКТОР
+// ========================
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , manager(new TimerManager(this))
 {
-    // !!! КРОК 1: Встановлюємо ім'я програми для коректного збереження у AppData !!!
-    QCoreApplication::setOrganizationName("MyUniversity");
-    QCoreApplication::setApplicationName("SmartTimerApp");
-
     ui->setupUi(this);
+    setupUiCustom();
 
-    // 1. Ініціалізація компонентів
-    manager = new TimerManager(this); // Ініціалізація Моделі
-    addDialog = new AddTimerDialog(this); // Ініціалізація форми додавання
+    // Підключення сигналів TimerManager
+    connect(manager, &TimerManager::timersUpdated,
+            this, &MainWindow::updateTimerList);
 
-    setupUiCustom(); // Програмне створення UI
+    connect(manager, &TimerManager::timerFinished,
+            this, &MainWindow::handleTimerTimeout);
 
-    // 2. З'єднання GUI -> Manager (Обробники 1-5, 8)
-    connect(addButton, &QPushButton::clicked, this, &MainWindow::on_addTimer_clicked);
-    connect(startButton, &QPushButton::clicked, this, &MainWindow::on_startAll_clicked);
-    connect(stopButton, &QPushButton::clicked, this, &MainWindow::on_stopAll_clicked);
-    connect(deleteButton, &QPushButton::clicked, this, &MainWindow::on_deleteTimer_clicked);
-    connect(toggleButton, &QPushButton::clicked, this, &MainWindow::on_toggleTimer_clicked);
+    connect(manager, &TimerManager::timerAdded,
+            this, &MainWindow::handleTimerAdded);
 
-    // З'єднання Dialog -> Manager (через MainWindow)
-    connect(addDialog, &AddTimerDialog::timerAdded, this, &MainWindow::handleTimerAdded); // Обробник 8
-
-    // 3. З'єднання Manager -> GUI (Обробники 6-7, 10)
-    connect(manager, &TimerManager::timerListUpdated, this, &MainWindow::updateTimerList); // Обробник 6
-    connect(manager, &TimerManager::timerTimeout, this, &MainWindow::handleTimerTimeout); // Обробник 7
-    connect(manager, &TimerManager::timerTicked, this, &MainWindow::updateCellTime); // Обробник 10
-
-    // З'єднання для таблиці
-    connect(timerTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::on_table_cellDoubleClicked); // Обробник 9
+    connect(manager, &TimerManager::timerEdited,
+            this, &MainWindow::handleTimerEdited);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-    // manager та addDialog мають parent, тому видаляються автоматично, але краще явно:
-    // delete manager;
-    // delete addDialog;
 }
 
-// --- Приватні методи ---
 
-// Обробник 11: Форматування часу
-QString MainWindow::formatTime(qint64 seconds) const
-{
-    if (seconds < 0) return "---";
-    qint64 h = seconds / 3600;
-    qint64 m = (seconds % 3600) / 60;
-    qint64 s = seconds % 60;
-    return QString("%1:%2:%3")
-        .arg(h, 2, 10, QChar('0'))
-        .arg(m, 2, 10, QChar('0'))
-        .arg(s, 2, 10, QChar('0'));
-}
+// ========================
+//     ІНІЦІАЛІЗАЦІЯ UI
+// ========================
 
-// Обробник 12: Програмне створення UI (21 елемент)
 void MainWindow::setupUiCustom()
 {
-    // Головний контейнер
-    QWidget *centralWidget = new QWidget(this);
-    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+    QWidget *central = new QWidget(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout(central);
 
-    // Панель кнопок (QHBoxLayout)
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-
-    // Елементи 1-5 (Кнопки)
-    addButton = new QPushButton(tr("➕ Додати Таймер/Будильник")); // Елемент 1
-    startButton = new QPushButton(tr("▶️ Запустити ВСІ")); // Елемент 2
-    stopButton = new QPushButton(tr("⏸️ Зупинити ВСІ")); // Елемент 3
-    deleteButton = new QPushButton(tr("❌ Видалити Обраний")); // Елемент 4
-    toggleButton = new QPushButton(tr("⏯️ Старт/Стоп Обраний")); // Елемент 5
-
-    buttonLayout->addWidget(addButton);
-    buttonLayout->addWidget(startButton);
-    buttonLayout->addWidget(stopButton);
-    buttonLayout->addWidget(deleteButton);
-    buttonLayout->addWidget(toggleButton);
-
-    mainLayout->addLayout(buttonLayout);
-
-    // Таблиця таймерів (QTableWidget) - Елемент 6
-    timerTable = new QTableWidget();
-    timerTable->setColumnCount(6); // 6 колонок (Name, Type, Duration/Target, Remaining, Status, ID)
-    timerTable->setHorizontalHeaderLabels({
-        tr("Назва"),
-        tr("Тип"),
-        tr("Тривалість / Час"),
-        tr("Залишок"),
-        tr("Статус"),
-        tr("ID") // Прихована колонка для ідентифікатора
-    });
-
-    // Налаштування таблиці (Елементи 7-10)
-    timerTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch); // Елемент 7
-    timerTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents); // Елемент 8
-    timerTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents); // Елемент 9
-    timerTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents); // Елемент 10
+    // === таблиця ===
+    timerTable = new QTableWidget(this);
+    timerTable->setColumnCount(4);
+    timerTable->setHorizontalHeaderLabels({"Назва", "Залишилось", "Статус", "Дії"});
+    timerTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     timerTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    timerTable->setEditTriggers(QAbstractItemView::NoEditTriggers); // Заборона редагування
 
-    // Ховаємо колонку ID
-    timerTable->setColumnHidden(5, true);
+    connect(timerTable, &QTableWidget::cellDoubleClicked,
+            this, &MainWindow::on_table_cellDoubleClicked);
 
+    // === кнопки ===
+    QHBoxLayout *btnLayout = new QHBoxLayout();
+
+    addButton = new QPushButton("Додати");
+    startButton = new QPushButton("Старт усіх");
+    stopButton = new QPushButton("Стоп усіх");
+    deleteButton = new QPushButton("Видалити");
+    toggleButton = new QPushButton("Старт/Стоп");
+
+    btnLayout->addWidget(addButton);
+    btnLayout->addWidget(startButton);
+    btnLayout->addWidget(stopButton);
+    btnLayout->addWidget(deleteButton);
+    btnLayout->addWidget(toggleButton);
+
+    // Підключення кнопок (слоти з .h)
+    connect(addButton, &QPushButton::clicked,
+            this, &MainWindow::on_addTimer_clicked);
+
+    connect(startButton, &QPushButton::clicked,
+            this, &MainWindow::on_startAll_clicked);
+
+    connect(stopButton, &QPushButton::clicked,
+            this, &MainWindow::on_stopAll_clicked);
+
+    connect(deleteButton, &QPushButton::clicked,
+            this, &MainWindow::on_deleteTimer_clicked);
+
+    connect(toggleButton, &QPushButton::clicked,
+            this, &MainWindow::on_toggleTimer_clicked);
+
+    // === trey icon (як у твоєму .h) ===
+    trayIcon = new QSystemTrayIcon(QIcon(), this);
+    trayIcon->setToolTip("Timer App");
+
+    // === складання інтерфейсу ===
     mainLayout->addWidget(timerTable);
+    mainLayout->addLayout(btnLayout);
 
-    setCentralWidget(centralWidget);
-    setWindowTitle(tr("Smart Timer App"));
-    resize(800, 600);
-
-    // Системний трей (Елемент 12)
-    trayIcon = new QSystemTrayIcon(this);
-    trayIcon->setIcon(QIcon(":/icon/timer_icon.ico")); // TODO: Тут можна додати ресурсний файл, поки що заглушка
-    trayIcon->setToolTip(tr("Smart Timer App: Активні таймери"));
-    trayIcon->show();
-
-    // Меню трею (Елементи 13-17)
-    QMenu *trayMenu = new QMenu(this);
-    QAction *showAction = new QAction(tr("Показати вікно"), this); // Елемент 13
-    QAction *startAllAction = new QAction(tr("Запустити всі"), this); // Елемент 14
-    QAction *stopAllAction = new QAction(tr("Зупинити всі"), this); // Елемент 15
-    QAction *quitAction = new QAction(tr("Вихід"), this); // Елемент 16
-    trayMenu->addAction(showAction);
-    trayMenu->addAction(startAllAction);
-    trayMenu->addAction(stopAllAction);
-    trayMenu->addSeparator();
-    trayMenu->addAction(quitAction);
-
-    trayIcon->setContextMenu(trayMenu); // Елемент 17
-
-    // Обробник 13-15: Керування треєм
-    connect(showAction, &QAction::triggered, this, &MainWindow::showNormal);
-    connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
-    connect(startAllAction, &QAction::triggered, manager, &TimerManager::startAll);
-    connect(stopAllAction, &QAction::triggered, manager, &TimerManager::stopAll);
+    setCentralWidget(central);
 }
 
-// --- Слоти (Обробники подій) ---
 
-// Обробник 1: Відкрити вікно додавання
+// ========================
+//   СЛОТИ – ТВОЇ З mainwindow.h
+// ========================
+
 void MainWindow::on_addTimer_clicked()
 {
-    addDialog->exec();
+    bool ok;
+    QString name = QInputDialog::getText(this, "Новий таймер", "Назва:", QLineEdit::Normal, "", &ok);
+    if (!ok || name.isEmpty()) return;
+
+    int secs = QInputDialog::getInt(this, "Час", "Секунди:", 60, 1);
+    manager->addTimer(name, secs);
 }
 
-// Обробник 2: Старт усіх
 void MainWindow::on_startAll_clicked()
 {
-    manager->startAll();
+    manager->startAllTimers();
 }
 
-// Обробник 3: Стоп усіх
 void MainWindow::on_stopAll_clicked()
 {
-    manager->stopAll();
+    manager->stopAllTimers();
 }
 
-// Обробник 4: Видалення обраного
 void MainWindow::on_deleteTimer_clicked()
 {
-    QModelIndexList selectedRows = timerTable->selectionModel()->selectedRows();
-    if (!selectedRows.isEmpty()) {
-        int row = selectedRows.first().row();
-        QString id = timerTable->item(row, 5)->text(); // ID знаходиться в 5-й прихованій колонці
-        manager->deleteTimer(id);
-    } else {
-        QMessageBox::warning(this, tr("Помилка"), tr("Виберіть таймер для видалення."));
-    }
+    int row = timerTable->currentRow();
+    if (row < 0) return;
+
+    QString id = timerTable->item(row, 0)->data(Qt::UserRole).toString();
+    manager->removeTimer(id);
 }
 
-// Обробник 5: Старт/Стоп обраного
 void MainWindow::on_toggleTimer_clicked()
 {
-    QModelIndexList selectedRows = timerTable->selectionModel()->selectedRows();
-    if (!selectedRows.isEmpty()) {
-        int row = selectedRows.first().row();
-        QString id = timerTable->item(row, 5)->text();
-        QString status = timerTable->item(row, 4)->text();
+    int row = timerTable->currentRow();
+    if (row < 0) return;
 
-        bool start = (status == tr("Зупинено")) || (status == tr("Очікування"));
-        manager->startStopTimer(id, start);
-    } else {
-        QMessageBox::warning(this, tr("Помилка"), tr("Виберіть таймер для Старт/Стоп."));
-    }
-}
-
-// Обробник 6: Оновлення таблиці (Прийом даних від TimerManager)
-void MainWindow::updateTimerList(const QList<TimerEntry*>& timers)
-{
-    timerTable->setRowCount(timers.size());
-    for (int i = 0; i < timers.size(); ++i) {
-        TimerEntry *entry = timers[i];
-
-        // Колонка 0: Назва
-        timerTable->setItem(i, 0, new QTableWidgetItem(entry->name));
-
-        // Колонка 1: Тип
-        QString type = entry->isAlarm ? tr("Будильник") : tr("Таймер");
-        timerTable->setItem(i, 1, new QTableWidgetItem(type));
-
-        // Колонка 2: Тривалість / Час спрацювання
-        QString durationOrTarget;
-        if (entry->isAlarm) {
-            durationOrTarget = QDateTime::fromSecsSinceEpoch(entry->durationSeconds).toString("yyyy-MM-dd HH:mm:ss");
-        } else {
-            durationOrTarget = formatTime(entry->durationSeconds);
-        }
-        timerTable->setItem(i, 2, new QTableWidgetItem(durationOrTarget));
-
-        // Колонка 3: Залишок (початкове значення)
-        timerTable->setItem(i, 3, new QTableWidgetItem(formatTime(entry->remainingSeconds())));
-
-        // Колонка 4: Статус
-        QString status = entry->isActive ? tr("Активний") : tr("Зупинено");
-        if (entry->isAlarm && !entry->isActive) {
-            status = tr("Очікування"); // Будильник, який ще не стартував
-        }
-        QTableWidgetItem *statusItem = new QTableWidgetItem(status);
-        if (entry->isActive) {
-            statusItem->setBackground(QBrush(Qt::green));
-        } else {
-            statusItem->setBackground(QBrush(Qt::yellow));
-        }
-        timerTable->setItem(i, 4, statusItem);
-
-        // Колонка 5: ID (Прихована)
-        timerTable->setItem(i, 5, new QTableWidgetItem(entry->id));
-    }
-}
-
-// Обробник 7: Спрацювання таймера
-void MainWindow::handleTimerTimeout(const QString& id, const QString& name, const QString& actionPath)
-{
-    QString message = tr("Таймер спрацював: %1. Дія: %2").arg(name, actionPath.isEmpty() ? tr("немає") : actionPath);
-    trayIcon->showMessage(tr("УВАГА!"), message, QSystemTrayIcon::Information, 5000); // Повідомлення в трей
-
-    QMessageBox::information(this, tr("Таймер Спрацював"), message);
-
-    if (!actionPath.isEmpty()) {
-        QProcess::startDetached(actionPath); // Запуск зовнішньої програми
-    }
-}
-
-// Обробник 8: Прийом нового таймера з діалогу
-void MainWindow::handleTimerAdded(const QString& name, qint64 durationSeconds, bool isAlarm, const QString& actionPath)
-{
-    manager->addTimer(name, durationSeconds, isAlarm, actionPath);
-}
-
-// Обробник 9: Подвійний клік (можна використовувати для редагування)
-void MainWindow::on_table_cellDoubleClicked(int row, int column)
-{
-    // Поки що заглушка, але тут буде виклик EditTimerDialog (Форма 3/4)
-    qDebug() << "Подвійний клік на таймері з ID:" << timerTable->item(row, 5)->text();
-    // Ми не будемо тут викликати EditTimerDialog, поки його не створимо.
-}
-
-// Обробник 10: Оновлення часу в комірці
-void MainWindow::updateCellTime(const QString& id, qint64 remainingTime)
-{
-    // Шукаємо рядок за ID
-    for (int i = 0; i < timerTable->rowCount(); ++i) {
-        if (timerTable->item(i, 5)->text() == id) {
-            // Оновлюємо колонку 3 (Залишок)
-            QTableWidgetItem *item = timerTable->item(i, 3);
-            if (item) {
-                item->setText(formatTime(remainingTime));
-            }
-            // Оновлюємо підказку в треї
-            if (remainingTime > 0) {
-                trayIcon->setToolTip(tr("Активний таймер: %1. Залишок: %2")
-                                         .arg(timerTable->item(i, 0)->text(), formatTime(remainingTime)));
-            }
-            break;
-        }
-    }
-}
-
-// Обробник 16: Обробка закриття вікна
-// --- Обробник 16: Обробка закриття вікна (ЗБЕРЕЖЕННЯ ДАНИХ) ---
-void MainWindow::closeEvent(QCloseEvent *event)
-{
-    manager->saveTimers(); // <--- ЗБЕРЕЖЕННЯ ДАНИХ ПЕРЕД ЗАКРИТТЯМ
-
-    // Якщо іконка в треї видима, приховуємо вікно замість повного закриття
-    if (trayIcon && trayIcon->isVisible()) {
-        hide();
-        event->ignore(); // Ігноруємо закриття
-
-        // Показуємо повідомлення, що програма продовжує працювати
-        trayIcon->showMessage(
-            tr("Smart Timer App"),
-            tr("Програма продовжує працювати у фоновому режимі. Натисніть на іконку, щоб відновити."),
-            QSystemTrayIcon::Information,
-            2000
-            );
-    } else {
-        event->accept(); // Повністю закриваємо
-    }
+    QString id = timerTable->item(row, 0)->data(Qt::UserRole).toString();
+    manager->toggleTimer(id);
 }
 
 void MainWindow::on_editTimer_clicked()
 {
-    // Отримуємо виділені рядки
-    QModelIndexList selectedRows = timerTable->selectionModel()->selectedRows();
-    if (selectedRows.isEmpty()) {
-        QMessageBox::warning(this, tr("Помилка"), tr("Виберіть таймер для редагування."));
-        return;
-    }
+    int row = timerTable->currentRow();
+    if (row < 0) return;
 
-    int row = selectedRows.first().row();
+    QString id = timerTable->item(row, 0)->data(Qt::UserRole).toString();
+    TimerEntry *entry = manager->getTimerById(id);
+    if (!entry) return;
 
-    // ID таймера знаходиться у 5-й колонці (індекс 5)
-    QString id = timerTable->item(row, 5)->text();
+    bool ok;
+    QString newName = QInputDialog::getText(this, "Редагувати", "Назва:",
+                                            QLineEdit::Normal, entry->name, &ok);
+    if (!ok || newName.isEmpty()) return;
 
-    // Отримуємо таймер за ID
-    TimerEntry* entry = manager->getTimerEntry(id);
-    if (!entry) {
-        QMessageBox::critical(this, tr("Помилка"), tr("Не вдалося знайти таймер у менеджері."));
-        return;
-    }
+    int newSecs = QInputDialog::getInt(this, "Час", "Секунди:", entry->durationSeconds, 1);
 
-    // Створюємо діалог редагування
-    EditTimerDialog dialog(this);
-    dialog.setTimerData(entry);
-
-    // Підключаємо сигнал редагування
-    connect(&dialog, &EditTimerDialog::timerEdited,
-            this, &MainWindow::handleTimerEdited);
-
-    dialog.exec();
+    manager->editTimer(id, newName, newSecs);
 }
 
-void MainWindow::handleTimerEdited(const QString& id,
-                                   const QString& name,
-                                   qint64 durationSeconds,
-                                   bool isAlarm,
-                                   const QString& actionPath)
-{
-    bool ok = manager->editTimer(id, name, durationSeconds, isAlarm, actionPath);
-    if (!ok) {
-        QMessageBox::critical(this, tr("Помилка"), tr("Не вдалося оновити таймер у менеджері."));
-        return;
-    }
 
-    QMessageBox::information(this, tr("Успіх"), tr("Таймер успішно оновлено!"));
+// ========================
+//  ОНОВЛЕННЯ ТАБЛИЦІ
+// ========================
+
+void MainWindow::updateTimerList(const QList<TimerEntry*> &timers)
+{
+    timerTable->setRowCount(0);
+
+    for (TimerEntry* t : timers)
+    {
+        int row = timerTable->rowCount();
+        timerTable->insertRow(row);
+
+        QTableWidgetItem *nameItem = new QTableWidgetItem(t->name);
+        nameItem->setData(Qt::UserRole, t->id);
+        timerTable->setItem(row, 0, nameItem);
+
+        timerTable->setItem(row, 1, new QTableWidgetItem(formatTime(t->remainingTime)));
+        timerTable->setItem(row, 2, new QTableWidgetItem(t->isRunning ? "Біжить" : "Пауза"));
+
+        QPushButton *toggleBtn = new QPushButton(t->isRunning ? "Пауза" : "Старт");
+        connect(toggleBtn, &QPushButton::clicked, this, [=]() {
+            manager->toggleTimer(t->id);
+        });
+
+        QWidget *actions = new QWidget();
+        QHBoxLayout *layout = new QHBoxLayout(actions);
+        layout->addWidget(toggleBtn);
+        layout->setContentsMargins(2, 2, 2, 2);
+        actions->setLayout(layout);
+
+        timerTable->setCellWidget(row, 3, actions);
+    }
+}
+
+
+// ========================
+//  ОНОВЛЕННЯ ОДНІЄЇ КОМІРКИ
+// ========================
+
+void MainWindow::updateCellTime(const QString &id, qint64 remainingTime)
+{
+    for (int r = 0; r < timerTable->rowCount(); r++) {
+        if (timerTable->item(r, 0)->data(Qt::UserRole).toString() == id) {
+            timerTable->item(r, 1)->setText(formatTime(remainingTime));
+            return;
+        }
+    }
+}
+
+
+// ========================
+//  СПРАЦЮВАННЯ ТАЙМЕРА
+// ========================
+
+void MainWindow::handleTimerTimeout(const QString &id, const QString &name, const QString &actionPath)
+{
+    QMessageBox::information(this, "Таймер", "Таймер \"" + name + "\" завершився!");
+}
+
+void MainWindow::handleTimerAdded(const QString &name, qint64 durationSeconds, bool, const QString&)
+{
+    Q_UNUSED(name)
+    Q_UNUSED(durationSeconds)
+}
+
+void MainWindow::handleTimerEdited(const QString&, const QString&, qint64, bool, const QString&)
+{
+    // Нічого не треба робити тут
+}
+
+
+// ========================
+//   ПОДВІЙНИЙ КЛІК
+// ========================
+
+void MainWindow::on_table_cellDoubleClicked(int row, int)
+{
+    if (row < 0) return;
+
+    QString id = timerTable->item(row, 0)->data(Qt::UserRole).toString();
+    manager->toggleTimer(id);
+}
+
+
+// ========================
+//  ФОРМАТУВАННЯ ЧАСУ
+// ========================
+
+QString MainWindow::formatTime(qint64 seconds) const
+{
+    int m = seconds / 60;
+    int s = seconds % 60;
+    return QString("%1:%2").arg(m, 2, 10, QChar('0')).arg(s, 2, 10, QChar('0'));
+}
+
+
+// ========================
+//     ЗАКРИТТЯ ВІКНА
+// ========================
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    trayIcon->showMessage("Таймери", "Додаток працює у фоні.");
+    event->ignore();
 }
