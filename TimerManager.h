@@ -2,82 +2,46 @@
 #define TIMERMANAGER_H
 
 #include <QObject>
-#include <QList>
-#include <QMap>
+#include <QVector>
 #include <QTimer>
-#include <QDateTime>
-#include <QUuid>
 
-// Клас, що представляє один таймер/будильник
-struct TimerEntry
-{
-    QString id;
+struct TimerEntry {
+    int id;
     QString name;
-    qint64 durationSeconds; // Загальна тривалість (для таймера) або час спрацювання (для будильника)
-    bool isAlarm; // true, якщо це будильник (спрацьовує у вказаний час)
-    bool isActive; // true, якщо таймер запущено
-    QString actionPath; // Шлях до файлу, який треба запустити при спрацюванні
-
-    // Розраховує час, що залишився (для відображення)
-    qint64 remainingSeconds() const {
-        if (isAlarm) {
-            // Для будильника: durationSeconds - це час спрацювання у секундах з початку епохи
-            qint64 now = QDateTime::currentSecsSinceEpoch();
-            return durationSeconds - now;
-        } else {
-            // Для таймера: поточна тривалість, що залишилася
-            // Припускаємо, що TimerManager оновлює цю логіку
-            return remaining;
-        }
-    }
-
-    // Приватне поле для внутрішнього використання TimerManager
-    qint64 remaining = 0; // Початковий залишок для таймера (оновлюється під час роботи)
+    int durationSeconds;
+    int remainingSeconds;
+    bool running;
+    QTimer* qtimer;
 };
 
-// Клас, що керує всіма таймерами (КОНТРОЛЕР/МОДЕЛЬ)
 class TimerManager : public QObject
 {
     Q_OBJECT
+
 public:
     explicit TimerManager(QObject *parent = nullptr);
+    ~TimerManager();
 
-    // Методи керування
-    void addTimer(const QString& name, qint64 durationSeconds, bool isAlarm, const QString& actionPath);
-    // Додаємо метод для редагування (Пріоритет 2)
-    void editTimer(const QString& id, const QString& name, qint64 durationSeconds, bool isAlarm, const QString& actionPath);
-    void deleteTimer(const QString& id);
-    void startStopTimer(const QString& id, bool start);
-    void startAll();
-    void stopAll();
-    QList<TimerEntry*> getTimers() const;
+    int addTimer(const QString &name, int durationSeconds);
+    bool removeTimer(int id);
+    bool startTimer(int id);
+    bool pauseTimer(int id);
+    bool updateTimer(int id, const QString &newName, int newDurationSeconds);
 
-    // Нові методи для роботи зі збереженням даних (Persistence)
-    void saveTimers() const;
-    void loadTimers();
-
-    // Новий метод для отримання одного таймера за ID (потрібен для редагування)
-    TimerEntry* getTimerEntry(const QString& id) const;
+    QVector<TimerEntry> getAllTimers() const;
 
 signals:
-    // Сигнали для MainWindow (View)
-    void timerListUpdated(const QList<TimerEntry*>& timers); // Оновлення всієї таблиці
-    void timerTicked(const QString& id, qint64 remainingTime); // Оновлення часу однієї комірки
-    void timerTimeout(const QString& id, const QString& name, const QString& actionPath); // Спрацювання таймера
+    void timerUpdated(int id, int remainingSeconds, bool running);
+    void timerFinished(int id);
 
 private slots:
-    void on_timer_tick(); // Основний цикл таймера
+    void handleTick();
 
 private:
-    QMap<QString, TimerEntry*> timers; // Зберігає всі таймери за ID
-    QTimer *updateTimer; // Таймер для оновлення кожну секунду
+    int nextId;
+    QVector<TimerEntry> timers;
 
-    void emitListUpdate();
-    void checkAlarmStatus();
-
-    // Допоміжні методи для JSON-серіалізації
-    QJsonObject timerEntryToJson(const TimerEntry* entry) const;
-    TimerEntry* timerEntryFromJson(const QJsonObject& json) const;
+    TimerEntry* getTimerById(int id);
 };
 
 #endif // TIMERMANAGER_H

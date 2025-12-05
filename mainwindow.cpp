@@ -1,5 +1,6 @@
 #include "mainwindow.h"
-#include "ui_mainwindow.h" // Все ще потрібен для ініціалізації Qt
+#include "ui_mainwindow.h"
+#include "EditTimerDialog.h"// Все ще потрібен для ініціалізації Qt
 #include <QHeaderView>
 #include <QDateTime>
 #include <QProcess>
@@ -308,4 +309,51 @@ void MainWindow::closeEvent(QCloseEvent *event)
     } else {
         event->accept(); // Повністю закриваємо
     }
+}
+
+void MainWindow::on_editTimer_clicked()
+{
+    // Отримуємо виділені рядки
+    QModelIndexList selectedRows = timerTable->selectionModel()->selectedRows();
+    if (selectedRows.isEmpty()) {
+        QMessageBox::warning(this, tr("Помилка"), tr("Виберіть таймер для редагування."));
+        return;
+    }
+
+    int row = selectedRows.first().row();
+
+    // ID таймера знаходиться у 5-й колонці (індекс 5)
+    QString id = timerTable->item(row, 5)->text();
+
+    // Отримуємо таймер за ID
+    TimerEntry* entry = manager->getTimerEntry(id);
+    if (!entry) {
+        QMessageBox::critical(this, tr("Помилка"), tr("Не вдалося знайти таймер у менеджері."));
+        return;
+    }
+
+    // Створюємо діалог редагування
+    EditTimerDialog dialog(this);
+    dialog.setTimerData(entry);
+
+    // Підключаємо сигнал редагування
+    connect(&dialog, &EditTimerDialog::timerEdited,
+            this, &MainWindow::handleTimerEdited);
+
+    dialog.exec();
+}
+
+void MainWindow::handleTimerEdited(const QString& id,
+                                   const QString& name,
+                                   qint64 durationSeconds,
+                                   bool isAlarm,
+                                   const QString& actionPath)
+{
+    bool ok = manager->editTimer(id, name, durationSeconds, isAlarm, actionPath);
+    if (!ok) {
+        QMessageBox::critical(this, tr("Помилка"), tr("Не вдалося оновити таймер у менеджері."));
+        return;
+    }
+
+    QMessageBox::information(this, tr("Успіх"), tr("Таймер успішно оновлено!"));
 }
