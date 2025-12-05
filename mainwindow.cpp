@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     timerTable->setColumnCount(4);
     timerTable->setHorizontalHeaderLabels({"Назва", "Залишилось", "Статус", "Дії"});
     timerTable->setGeometry(10, 10, 580, 300);
+    timerTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     addButton = new QPushButton("Додати таймер", this);
     addButton->setGeometry(10, 320, 120, 30);
