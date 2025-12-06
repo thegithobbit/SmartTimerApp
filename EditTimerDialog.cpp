@@ -82,8 +82,8 @@ void EditTimerDialog::on_save_clicked()
     }
 
     qint64 totalDurationSeconds = static_cast<qint64>(durationHours->value()) * 3600 +
-                                  static_cast<qint64>(durationMinutes->value()) * 60 +
-                                  static_cast<qint64>(durationSeconds->value());
+    static_cast<qint64>(durationMinutes->value()) * 60 +
+    static_cast<qint64>(durationSeconds->value());
 
     if (totalDurationSeconds <= 0) {
         QMessageBox::warning(this, tr("Помилка"), tr("Тривалість таймера має бути більшою за нуль."));

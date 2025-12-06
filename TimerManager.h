@@ -34,7 +34,6 @@ public:
 
     bool isNameUnique(const QString &name, int excludeId = -1) const;
 
-    // ✅ Зробили публічним
     TimerEntry* getTimerById(int id);
 
 signals:

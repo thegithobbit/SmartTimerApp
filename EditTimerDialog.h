@@ -9,7 +9,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
-struct TimerEntry; // forward declaration
+struct TimerEntry;
 
 class EditTimerDialog : public QDialog
 {
@@ -19,7 +19,6 @@ public:
 
     void setTimerData(TimerEntry *entry);
 
-    // ✅ Гетери для доступу до полів
     QLineEdit* getNameEdit() const { return nameEdit; }
     QSpinBox* getHours() const { return durationHours; }
     QSpinBox* getMinutes() const { return durationMinutes; }
