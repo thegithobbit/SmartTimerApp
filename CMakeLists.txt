@@ -9,19 +9,24 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
+# Джерела
 set(SOURCES
     main.cpp
     mainwindow.cpp
     TimerManager.cpp
-    EditTimerDialog.cpp
+    EditTimerDialog.cpp       # Редагування таймера
+    AddTimerDialog.cpp        # Додавання нового таймера
 )
 
+# Хедери
 set(HEADERS
     mainwindow.h
     TimerManager.h
     EditTimerDialog.h
+    AddTimerDialog.h
 )
 
+# UI файли
 set(UIS
     mainwindow.ui
 )
