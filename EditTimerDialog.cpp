@@ -1,4 +1,5 @@
 #include "EditTimerDialog.h"
+#include "TimerManager.h" // тепер можна
 #include <QGridLayout>
 #include <QMessageBox>
 

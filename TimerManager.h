@@ -30,8 +30,9 @@ public:
     bool updateTimer(int id, const QString &newName, int newDurationSeconds);
 
     QVector<TimerEntry> getAllTimers() const;
-    // ДОП: повертає вказівники на внутрішні елементи (без копіювання)
     QList<TimerEntry*> getAllTimersPointers();
+
+    bool isNameUnique(const QString &name, int excludeId = -1) const;
 
 signals:
     void timerUpdated(int id, int remainingSeconds, bool running);

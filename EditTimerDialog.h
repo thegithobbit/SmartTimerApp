@@ -8,7 +8,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include "TimerManager.h" // Потрібен TimerEntry
+
+// не включаємо TimerManager.h тут
+struct TimerEntry; // <-- forward declaration
 
 class EditTimerDialog : public QDialog
 {
@@ -16,7 +18,6 @@ class EditTimerDialog : public QDialog
 public:
     explicit EditTimerDialog(QWidget *parent = nullptr);
 
-    // Ініціалізація діалогу даними таймера
     void setTimerData(TimerEntry *entry);
 
 private slots:
@@ -26,11 +27,9 @@ signals:
     void timerEdited(const QString& id, const QString& name, qint64 durationSeconds);
 
 private:
-    QString currentId; // ID таймера, який редагуємо
+    QString currentId;
 
-    // Елементи керування
     QLineEdit *nameEdit;
-
     QSpinBox *durationHours;
     QSpinBox *durationMinutes;
     QSpinBox *durationSeconds;

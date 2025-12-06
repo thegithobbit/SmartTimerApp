@@ -4,15 +4,10 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QPushButton>
-#include <QSystemTrayIcon>
-#include <QCloseEvent>
-#include <QSet>
-
+#include <QCheckBox>
+#include <QList>
 #include "TimerManager.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+#include "EditTimerDialog.h"
 
 class MainWindow : public QMainWindow
 {
@@ -23,46 +18,30 @@ public:
     ~MainWindow();
 
 private slots:
-    // Кнопки
     void on_addTimer_clicked();
     void on_startAll_clicked();
     void on_stopAll_clicked();
-    void on_deleteTimer_clicked();       // Видалити один вибраний через інтерфейс (не чекбокс)
-    void on_toggleTimer_clicked();       // Старт/Стоп один вибраний через інтерфейс
-
-    // Для роботи з чекбоксами
     void deleteSelectedTimers();
+    void toggleSelectedTimers();
     void startSelectedTimers();
     void stopSelectedTimers();
-    void toggleSelectedTimers();
+    void on_editSelected_clicked();
 
-    // Оновлення таблиці
-    void updateTimerList(const QList<TimerEntry*>& timers);
+    void updateEditButtonVisibility();
 
 private:
-    Ui::MainWindow *ui;
+    TimerManager *manager;
 
-    // UI елементи
     QTableWidget *timerTable;
     QPushButton *addButton;
     QPushButton *startButton;
     QPushButton *stopButton;
-    QPushButton *deleteButton;          // Видалити обране (через чекбокси)
-    QPushButton *toggleButton;          // Старт/Стоп для обраних
+    QPushButton *deleteButton;
+    QPushButton *toggleButton;
+    QPushButton *editButton;
 
-    // Менеджер таймерів
-    TimerManager *manager;
-
-    // Стан: чи додана колонка "№"
-    bool numberColumnAdded;
-
-    // Допоміжні
-    void ensureNumberColumnExists(); // додає колонку №, якщо треба
-    int checkboxColumnIndex() const;
-    int nameColumnIndex() const;
-    int remainingColumnIndex() const;
-    int statusColumnIndex() const;
-    int actionsColumnIndex() const;
+    void updateTimerList(const QList<TimerEntry*>& timers);
+    QList<int> getSelectedRows() const;
 };
 
 #endif // MAINWINDOW_H
