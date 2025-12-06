@@ -2,46 +2,37 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTableWidget>
-#include <QPushButton>
-#include <QCheckBox>
 #include <QList>
 #include "TimerManager.h"
-#include "EditTimerDialog.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
-    void on_addTimer_clicked();
-    void on_startAll_clicked();
-    void on_stopAll_clicked();
-    void deleteSelectedTimers();
-    void toggleSelectedTimers();
-    void startSelectedTimers();
-    void stopSelectedTimers();
-    void on_editSelected_clicked();
+    void on_addTimerButton_clicked();
+    void on_startSelectedButton_clicked();
+    void on_pauseSelectedButton_clicked();
+    void on_deleteSelectedButton_clicked();
+    void on_editSelectedButton_clicked();
 
-    void updateEditButtonVisibility();
+    void handleTimerUpdated(int id, int remaining, bool running);
+    void handleTimerFinished(int id);
 
 private:
+    Ui::MainWindow *ui;          // <- оце ЗНИКЛО у тебе!
     TimerManager *manager;
 
-    QTableWidget *timerTable;
-    QPushButton *addButton;
-    QPushButton *startButton;
-    QPushButton *stopButton;
-    QPushButton *deleteButton;
-    QPushButton *toggleButton;
-    QPushButton *editButton;
-
-    void updateTimerList(const QList<TimerEntry*>& timers);
-    QList<int> getSelectedRows() const;
+    void refreshTable();
+    QList<int> getSelectedTimerIds() const;
 };
 
 #endif // MAINWINDOW_H

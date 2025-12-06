@@ -9,20 +9,25 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Core) # Додано Core
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core) # Додано Core
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Core)
 
 set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
-    TimerManager.cpp  
+
+    TimerManager.cpp
     TimerManager.h
+
     AddTimerDialog.cpp
     AddTimerDialog.h
-    EditTimerDialog.h
+    AddTimerDialog.ui   # <-- 🔥 ТИ ПРИБРАЛА ЙОГО. ПОВЕРТАЮ.
+
     EditTimerDialog.cpp
+    EditTimerDialog.h
+    EditTimerDialog.ui  # <-- 🔥 ОСЬ ЦЬОГО НЕ ВИСТАЧАЛО
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -42,11 +47,8 @@ else()
     endif()
 endif()
 
-target_link_libraries(SmartTimerApp PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core) # Додано Core для TimerManager
+target_link_libraries(SmartTimerApp PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
     set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.SmartTimerApp)
 endif()
