@@ -189,6 +189,33 @@ void MainWindow::updateTimerList(const QList<TimerEntry*>& timers)
     }
 }
 
+void MainWindow::startSelectedTimers()
+{
+    for (int i = 0; i < timerTable->rowCount(); ++i) {
+        QWidget *cell = timerTable->cellWidget(i, 0);
+        if (!cell) continue;
+
+        QCheckBox *check = cell->findChild<QCheckBox*>();
+        if (!check || !check->isChecked()) continue;
+
+        int id = timerTable->item(i, 1)->data(Qt::UserRole).toInt();
+        manager->startTimer(id);
+    }
+}
+
+void MainWindow::stopSelectedTimers()
+{
+    for (int i = 0; i < timerTable->rowCount(); ++i) {
+        QWidget *cell = timerTable->cellWidget(i, 0);
+        if (!cell) continue;
+
+        QCheckBox *check = cell->findChild<QCheckBox*>();
+        if (!check || !check->isChecked()) continue;
+
+        int id = timerTable->item(i, 1)->data(Qt::UserRole).toInt();
+        manager->pauseTimer(id);
+    }
+}
 
 // Видалити всі відмічені таймери
 void MainWindow::deleteSelectedTimers()

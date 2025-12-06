@@ -4,9 +4,10 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QPushButton>
-#include <QCheckBox>
 #include <QSystemTrayIcon>
 #include <QCloseEvent>
+#include <QCheckBox>
+#include <QSet>
 #include "TimerManager.h"
 
 QT_BEGIN_NAMESPACE
@@ -18,7 +19,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -26,10 +27,14 @@ private slots:
     void on_addTimer_clicked();
     void on_startAll_clicked();
     void on_stopAll_clicked();
-    void on_deleteTimer_clicked();       // Видалити один вибраний через кнопки в рядку
-    void on_toggleTimer_clicked();       // Старт/Стоп один вибраний через кнопки в рядку
-    void deleteSelectedTimers();         // Видалити всі відмічені через чекбокси
-    void toggleSelectedTimers();         // Старт/Стоп всі відмічені через чекбокси
+    void on_deleteTimer_clicked();
+    void on_toggleTimer_clicked();
+
+    // Управління обраними (чекбокси)
+    void startSelectedTimers();
+    void stopSelectedTimers();
+    void deleteSelectedTimers();
+    void toggleSelectedTimers();
 
     // Оновлення таблиці
     void updateTimerList(const QList<TimerEntry*>& timers);
@@ -37,18 +42,16 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    // UI елементи
     QTableWidget *timerTable;
     QPushButton *addButton;
     QPushButton *startButton;
     QPushButton *stopButton;
-    QPushButton *deleteButton;          // Видалити обране
-    QPushButton *toggleButton;          // Старт/Стоп обране
+    QPushButton *deleteButton;
+    QPushButton *toggleButton;
 
-    // Менеджер таймерів
     TimerManager *manager;
 
-    // Подія закриття (можна реалізувати, якщо потрібно)
+protected:
     void closeEvent(QCloseEvent *event) override {}
 };
 
