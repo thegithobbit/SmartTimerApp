@@ -136,22 +136,21 @@ void MainWindow::updateEditButtonVisibility()
 // Дії кнопок
 void MainWindow::onAddTimer()
 {
-    EditTimerDialog dlg(this);
+    AddTimerDialog dlg(this);
+
+    connect(&dlg, &AddTimerDialog::timerAdded, this, [=](const QString &name, qint64 duration){
+        if (!manager->isNameUnique(name)) {
+            QMessageBox::warning(this, "Помилка", "Назва має бути унікальною");
+            return;
+        }
+        manager->addTimer(name, duration);
+        refreshTable();
+    });
+
     dlg.exec();
     refreshTable();
 }
 
-void MainWindow::onStartSelected()
-{
-    for (int row = 0; row < timerTable->rowCount(); ++row) {
-        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
-        if (check && check->isChecked()) {
-            TimerEntry* t = manager->getAllTimersPointers()[row];
-            manager->startTimer(t->id);
-        }
-    }
-    refreshTable();
-}
 
 void MainWindow::onStopSelected()
 {
