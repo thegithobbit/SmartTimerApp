@@ -72,10 +72,18 @@ QString MainWindow::formatTime(int totalSeconds) const
         .arg(s, 2, 10, QChar('0'));
 }
 
-// Оновлення таблиці
+// Оновлення таблиці з збереженням стану чекбоксів
 void MainWindow::refreshTable()
 {
     QList<TimerEntry*> timers = manager->getAllTimersPointers();
+
+    // Зберігаємо стан чекбоксів
+    QVector<bool> checkedStates;
+    for (int row = 0; row < timerTable->rowCount(); ++row) {
+        QCheckBox* check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        checkedStates.append(check && check->isChecked());
+    }
+
     timerTable->setRowCount(timers.size());
 
     for (int i = 0; i < timers.size(); ++i) {
@@ -83,6 +91,8 @@ void MainWindow::refreshTable()
 
         // Чекбокс
         QCheckBox *check = new QCheckBox();
+        if (i < checkedStates.size() && checkedStates[i])
+            check->setChecked(true);
         timerTable->setCellWidget(i, 0, check);
         connect(check, &QCheckBox::stateChanged, this, &MainWindow::updateEditButtonVisibility);
 
@@ -153,16 +163,13 @@ void MainWindow::onAddTimer()
 
 void MainWindow::onStartSelected()
 {
-    QList<TimerEntry*> timers = manager->getAllTimersPointers();
-
     for (int row = 0; row < timerTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
-            TimerEntry* t = timers[row]; // беремо таймер, що відповідає рядку
-            manager->startTimer(t->id);
+            int id = check->property("timerId").toInt(); // беремо id з чекбокса
+            manager->startTimer(id);
         }
     }
-
     refreshTable();
 }
 
@@ -171,8 +178,8 @@ void MainWindow::onStopSelected()
     for (int row = 0; row < timerTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
-            TimerEntry* t = manager->getAllTimersPointers()[row];
-            manager->pauseTimer(t->id);
+            int id = check->property("timerId").toInt();
+            manager->pauseTimer(id);
         }
     }
     refreshTable();
@@ -183,8 +190,8 @@ void MainWindow::onDeleteSelected()
     for (int row = timerTable->rowCount()-1; row >=0 ; --row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
-            TimerEntry* t = manager->getAllTimersPointers()[row];
-            manager->removeTimer(t->id);
+            int id = check->property("timerId").toInt();
+            manager->removeTimer(id);
         }
     }
     refreshTable();
@@ -196,7 +203,7 @@ void MainWindow::onEditSelected()
     for (int row = 0; row < timerTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
-            editId = manager->getAllTimersPointers()[row]->id;
+            editId = check->property("timerId").toInt();
             break;
         }
     }
