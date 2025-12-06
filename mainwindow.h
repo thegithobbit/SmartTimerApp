@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QList>
 #include <QSet>
 #include "TimerManager.h"
 
@@ -22,16 +21,22 @@ private slots:
     void onAddTimer();
     void onStartSelected();
     void onStopSelected();
+    void onDeleteSelected();
     void onEditSelected();
+
+    void handleRowStart(int id);
+    void handleRowStop(int id);
+    void handleRowDelete(int id);
 
     void refreshTimersTable();
     void updateEditButtonVisibility();
 
 private:
-    Ui::MainWindow *ui;       // Має бути обов'язково!
+    Ui::MainWindow *ui;
     TimerManager *manager;
 
     QString formatTime(int totalSeconds) const;
+    QSet<int> getSelectedTimerIds() const;
 };
 
 #endif // MAINWINDOW_H

@@ -16,36 +16,52 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTableWidget" name="timersTable"/>
+     <widget class="QTableWidget" name="timersTable">
+      <column>
+       <property name="text"><string>Виділити</string></property>
+      </column>
+      <column>
+       <property name="text"><string>№</string></property>
+      </column>
+      <column>
+       <property name="text"><string>Назва</string></property>
+      </column>
+      <column>
+       <property name="text"><string>Час</string></property>
+      </column>
+      <column>
+       <property name="text"><string>Статус</string></property>
+      </column>
+      <column>
+       <property name="text"><string>Дія</string></property>
+      </column>
+     </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="buttonLayout">
       <item>
        <widget class="QPushButton" name="addButton">
-        <property name="text">
-         <string>Додати</string>
-        </property>
+        <property name="text"><string>Додати</string></property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="startSelectedButton">
-        <property name="text">
-         <string>Старт обрані</string>
-        </property>
+        <property name="text"><string>Старт обрані</string></property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="stopSelectedButton">
-        <property name="text">
-         <string>Стоп обрані</string>
-        </property>
+        <property name="text"><string>Стоп обрані</string></property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="deleteSelectedButton">
+        <property name="text"><string>Видалити обрані</string></property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="editButton">
-        <property name="text">
-         <string>Редагувати</string>
-        </property>
+        <property name="text"><string>Редагувати</string></property>
        </widget>
       </item>
      </layout>
