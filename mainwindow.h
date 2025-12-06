@@ -6,8 +6,8 @@
 #include <QPushButton>
 #include <QSystemTrayIcon>
 #include <QCloseEvent>
-#include <QCheckBox>
 #include <QSet>
+
 #include "TimerManager.h"
 
 QT_BEGIN_NAMESPACE
@@ -19,7 +19,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
@@ -27,13 +27,13 @@ private slots:
     void on_addTimer_clicked();
     void on_startAll_clicked();
     void on_stopAll_clicked();
-    void on_deleteTimer_clicked();
-    void on_toggleTimer_clicked();
+    void on_deleteTimer_clicked();       // Видалити один вибраний через інтерфейс (не чекбокс)
+    void on_toggleTimer_clicked();       // Старт/Стоп один вибраний через інтерфейс
 
-    // Управління обраними (чекбокси)
+    // Для роботи з чекбоксами
+    void deleteSelectedTimers();
     void startSelectedTimers();
     void stopSelectedTimers();
-    void deleteSelectedTimers();
     void toggleSelectedTimers();
 
     // Оновлення таблиці
@@ -42,17 +42,27 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    // UI елементи
     QTableWidget *timerTable;
     QPushButton *addButton;
     QPushButton *startButton;
     QPushButton *stopButton;
-    QPushButton *deleteButton;
-    QPushButton *toggleButton;
+    QPushButton *deleteButton;          // Видалити обране (через чекбокси)
+    QPushButton *toggleButton;          // Старт/Стоп для обраних
 
+    // Менеджер таймерів
     TimerManager *manager;
 
-protected:
-    void closeEvent(QCloseEvent *event) override {}
+    // Стан: чи додана колонка "№"
+    bool numberColumnAdded;
+
+    // Допоміжні
+    void ensureNumberColumnExists(); // додає колонку №, якщо треба
+    int checkboxColumnIndex() const;
+    int nameColumnIndex() const;
+    int remainingColumnIndex() const;
+    int statusColumnIndex() const;
+    int actionsColumnIndex() const;
 };
 
 #endif // MAINWINDOW_H
