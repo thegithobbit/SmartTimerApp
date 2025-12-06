@@ -28,7 +28,7 @@ private slots:
     void updateEditButtonVisibility();
 
 private:
-    Ui::MainWindow *ui;       // Обов'язково має бути!
+    Ui::MainWindow *ui;       // Має бути обов'язково!
     TimerManager *manager;
 
     QString formatTime(int totalSeconds) const;

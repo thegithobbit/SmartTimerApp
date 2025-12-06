@@ -38,7 +38,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::refreshTimersTable()
 {
-    // 1️⃣ Зберігаємо виділені таймери
     QSet<int> selectedIds;
     for (int row = 0; row < ui->timersTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(ui->timersTable->cellWidget(row, 0));
@@ -48,30 +47,23 @@ void MainWindow::refreshTimersTable()
         }
     }
 
-    // 2️⃣ Очищаємо таблицю
     ui->timersTable->setRowCount(0);
     auto timers = manager->getAllTimersPointers();
     for (int i = 0; i < timers.size(); ++i) {
         ui->timersTable->insertRow(i);
 
-        // Чекбокс
         QCheckBox *checkBox = new QCheckBox();
         ui->timersTable->setCellWidget(i, 0, checkBox);
-        if (selectedIds.contains(timers[i]->id)) {
-            checkBox->setChecked(true);
-        }
+        if (selectedIds.contains(timers[i]->id)) checkBox->setChecked(true);
         connect(checkBox, &QCheckBox::stateChanged, this, &MainWindow::updateEditButtonVisibility);
 
-        // Колонка №
         QTableWidgetItem *numItem = new QTableWidgetItem(QString::number(i + 1));
         numItem->setData(Qt::UserRole, timers[i]->id);
         ui->timersTable->setItem(i, 1, numItem);
 
-        // Назва
         QTableWidgetItem *nameItem = new QTableWidgetItem(timers[i]->name);
         ui->timersTable->setItem(i, 2, nameItem);
 
-        // Залишок часу
         QTableWidgetItem *timeItem = new QTableWidgetItem(formatTime(timers[i]->remainingSeconds));
         ui->timersTable->setItem(i, 3, timeItem);
     }
@@ -79,7 +71,7 @@ void MainWindow::refreshTimersTable()
     updateEditButtonVisibility();
 }
 
-QString MainWindow::formatTime(int totalSeconds)
+QString MainWindow::formatTime(int totalSeconds) const
 {
     int h = totalSeconds / 3600;
     int m = (totalSeconds % 3600) / 60;
@@ -102,7 +94,7 @@ void MainWindow::updateEditButtonVisibility()
 
 void MainWindow::onAddTimer()
 {
-    // Реалізація додавання таймера (можеш залишити свою)
+    // Твоя логіка додавання таймера
 }
 
 void MainWindow::onStartSelected()
@@ -146,23 +138,15 @@ void MainWindow::onEditSelected()
     dlg.setTimerData(entry);
 
     // Жива перевірка унікальності під час редагування
-    connect(dlg.nameEdit, &QLineEdit::textChanged, this, [this, &dlg, editId]() {
-        QString newName = dlg.nameEdit->text().trimmed();
+    connect(dlg.getNameEdit(), &QLineEdit::textChanged, this, [this, &dlg, editId]() {
+        QString newName = dlg.getTimerName().trimmed();
         bool unique = manager->isNameUnique(newName, editId);
-        if (!unique) {
-            dlg.nameEdit->setStyleSheet("border: 1px solid red;");
-            dlg.saveButton->setEnabled(false);
-        } else {
-            dlg.nameEdit->setStyleSheet("");
-            dlg.saveButton->setEnabled(true);
-        }
+        dlg.setSaveButtonEnabled(unique);
     });
 
     if (dlg.exec() == QDialog::Accepted) {
-        QString newName = dlg.nameEdit->text().trimmed();
-        int newDuration = dlg.durationHours->value() * 3600 +
-                          dlg.durationMinutes->value() * 60 +
-                          dlg.durationSeconds->value();
+        QString newName = dlg.getTimerName().trimmed();
+        qint64 newDuration = dlg.getDurationSeconds();
         manager->updateTimer(editId, newName, newDuration);
         refreshTimersTable();
     }

@@ -1,5 +1,5 @@
 #include "EditTimerDialog.h"
-#include "TimerManager.h" // тепер можна
+#include "TimerManager.h"
 #include <QGridLayout>
 #include <QMessageBox>
 
@@ -21,7 +21,6 @@ void EditTimerDialog::setupUi()
     // Назва таймера
     nameEdit = new QLineEdit();
     nameEdit->setPlaceholderText(tr("Назва таймера"));
-
     inputLayout->addWidget(new QLabel(tr("Назва:")), 0, 0);
     inputLayout->addWidget(nameEdit, 0, 1, 1, 2);
 
@@ -67,7 +66,6 @@ void EditTimerDialog::setTimerData(TimerEntry *entry)
     if (!entry) return;
 
     currentId = QString::number(entry->id);
-
     nameEdit->setText(entry->name);
 
     qint64 totalSeconds = entry->durationSeconds;
@@ -97,26 +95,25 @@ void EditTimerDialog::on_save_clicked()
     accept();
 }
 
-QString EditTimerDialog::getTimerName() const {
-    return nameEdit->text();
+// ✅ Геттери для MainWindow
+QString EditTimerDialog::getTimerName() const
+{
+    return nameEdit->text().trimmed();
 }
 
-void EditTimerDialog::setTimerName(const QString &name) {
-    nameEdit->setText(name);
-}
-
-qint64 EditTimerDialog::getDurationSeconds() const {
+qint64 EditTimerDialog::getDurationSeconds() const
+{
     return static_cast<qint64>(durationHours->value()) * 3600 +
            static_cast<qint64>(durationMinutes->value()) * 60 +
            static_cast<qint64>(durationSeconds->value());
 }
 
-void EditTimerDialog::setDuration(qint64 totalSeconds) {
-    durationHours->setValue(totalSeconds / 3600);
-    durationMinutes->setValue((totalSeconds % 3600) / 60);
-    durationSeconds->setValue(totalSeconds % 60);
+void EditTimerDialog::setSaveButtonEnabled(bool enabled)
+{
+    saveButton->setEnabled(enabled);
 }
 
-void EditTimerDialog::setSaveButtonEnabled(bool enabled) {
-    saveButton->setEnabled(enabled);
+QLineEdit* EditTimerDialog::getNameEdit() const
+{
+    return nameEdit;
 }
