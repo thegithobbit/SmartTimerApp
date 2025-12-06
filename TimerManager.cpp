@@ -96,6 +96,15 @@ QVector<TimerEntry> TimerManager::getAllTimers() const
     return timers;
 }
 
+// --- новий метод ---
+QList<TimerEntry*> TimerManager::getAllTimersPointers()
+{
+    QList<TimerEntry*> list;
+    for (auto &t : timers)
+        list.append(&t);
+    return list;
+}
+
 void TimerManager::handleTick()
 {
     QTimer* senderTimer = qobject_cast<QTimer*>(sender());

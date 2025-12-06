@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVector>
 #include <QTimer>
+#include <QList>
 
 struct TimerEntry {
     int id;
@@ -29,6 +30,7 @@ public:
     bool updateTimer(int id, const QString &newName, int newDurationSeconds);
 
     QVector<TimerEntry> getAllTimers() const;
+    QList<TimerEntry*> getAllTimersPointers(); // новий метод
 
 signals:
     void timerUpdated(int id, int remainingSeconds, bool running);
