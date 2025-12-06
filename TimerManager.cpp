@@ -96,12 +96,14 @@ QVector<TimerEntry> TimerManager::getAllTimers() const
     return timers;
 }
 
-// --- новий метод ---
+// НОВА реалізація: повертає список вказівників на внутрішні елементи
 QList<TimerEntry*> TimerManager::getAllTimersPointers()
 {
     QList<TimerEntry*> list;
-    for (auto &t : timers)
-        list.append(&t);
+    for (int i = 0; i < timers.size(); ++i) {
+        // const_cast тут безпечний, бо ми не змінюємо константність зовні
+        list.append(const_cast<TimerEntry*>(&timers[i]));
+    }
     return list;
 }
 
