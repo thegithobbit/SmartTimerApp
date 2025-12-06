@@ -1,42 +1,65 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include "EditTimerDialog.h"
-#include <QCheckBox>
-#include <QPushButton>
-#include <QTableWidgetItem>
+#include "MainWindow.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMessageBox>
+#include <QCheckBox>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow), manager(new TimerManager(this))
+    : QMainWindow(parent), manager(new TimerManager(this))
 {
-    ui->setupUi(this);
+    // Вікно
+    resize(700, 450);
 
-    // Налаштування таблиці
-    ui->timersTable->setColumnCount(6); // Галочка, №, Назва, Час, Старт/Стоп, Видалити
-    ui->timersTable->setHorizontalHeaderLabels({"", "№", "Назва", "Час", "Старт/Стоп", "Видалити"});
-    ui->timersTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->timersTable->verticalHeader()->setVisible(false);
+    QWidget *central = new QWidget(this);
+    setCentralWidget(central);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(central);
+
+    // Таблиця
+    timerTable = new QTableWidget();
+    timerTable->setColumnCount(5);
+    timerTable->setHorizontalHeaderLabels({"Виділити", "Назва", "Час", "Статус", "Дії"});
+    timerTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    timerTable->verticalHeader()->setVisible(false);
+    mainLayout->addWidget(timerTable);
 
     // Кнопки знизу
-    connect(ui->addButton, &QPushButton::clicked, this, &MainWindow::onAddTimer);
-    connect(ui->startSelectedButton, &QPushButton::clicked, this, &MainWindow::onStartSelected);
-    connect(ui->stopSelectedButton, &QPushButton::clicked, this, &MainWindow::onStopSelected);
-    connect(ui->deleteSelectedButton, &QPushButton::clicked, this, &MainWindow::onDeleteSelected);
-    connect(ui->editButton, &QPushButton::clicked, this, &MainWindow::onEditSelected);
+    QHBoxLayout *btnLayout = new QHBoxLayout();
+    addButton = new QPushButton("Додати");
+    startButton = new QPushButton("Старт обрані");
+    stopButton = new QPushButton("Стоп обрані");
+    deleteButton = new QPushButton("Видалити обрані");
+    editButton = new QPushButton("Редагувати");
+    editButton->setEnabled(false);
+
+    btnLayout->addWidget(addButton);
+    btnLayout->addWidget(startButton);
+    btnLayout->addWidget(stopButton);
+    btnLayout->addWidget(deleteButton);
+    btnLayout->addWidget(editButton);
+    mainLayout->addLayout(btnLayout);
+
+    // Підключення кнопок
+    connect(addButton, &QPushButton::clicked, this, &MainWindow::onAddTimer);
+    connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartSelected);
+    connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopSelected);
+    connect(deleteButton, &QPushButton::clicked, this, &MainWindow::onDeleteSelected);
+    connect(editButton, &QPushButton::clicked, this, &MainWindow::onEditSelected);
 
     // Сигнали від менеджера
-    connect(manager, &TimerManager::timerUpdated, this, &MainWindow::refreshTimersTable);
-    connect(manager, &TimerManager::timerFinished, this, &MainWindow::refreshTimersTable);
+    connect(manager, &TimerManager::timerUpdated, this, &MainWindow::refreshTable);
+    connect(manager, &TimerManager::timerFinished, this, &MainWindow::refreshTable);
 
-    refreshTimersTable();
+    refreshTable();
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+    delete manager;
 }
 
+// Формат часу
 QString MainWindow::formatTime(int totalSeconds) const
 {
     int h = totalSeconds / 3600;
@@ -48,113 +71,139 @@ QString MainWindow::formatTime(int totalSeconds) const
         .arg(s, 2, 10, QChar('0'));
 }
 
-QSet<int> MainWindow::getSelectedTimerIds() const
+// Оновлення таблиці
+void MainWindow::refreshTable()
 {
-    QSet<int> ids;
-    for (int row = 0; row < ui->timersTable->rowCount(); ++row) {
-        QCheckBox* cb = qobject_cast<QCheckBox*>(ui->timersTable->cellWidget(row, 0));
-        if(cb && cb->isChecked()) {
-            int id = ui->timersTable->item(row, 1)->data(Qt::UserRole).toInt();
-            ids.insert(id);
-        }
-    }
-    return ids;
-}
-
-void MainWindow::refreshTimersTable()
-{
-    QSet<int> selectedIds = getSelectedTimerIds();
-    ui->timersTable->setRowCount(0);
-    auto timers = manager->getAllTimersPointers();
+    QList<TimerEntry*> timers = manager->getAllTimersPointers();
+    timerTable->setRowCount(timers.size());
 
     for (int i = 0; i < timers.size(); ++i) {
         TimerEntry* t = timers[i];
-        ui->timersTable->insertRow(i);
 
-        // Галочка
-        QCheckBox* cb = new QCheckBox();
-        cb->setChecked(selectedIds.contains(t->id));
-        ui->timersTable->setCellWidget(i, 0, cb);
-        connect(cb, &QCheckBox::stateChanged, this, &MainWindow::updateEditButtonVisibility);
-
-        // №
-        QTableWidgetItem* numItem = new QTableWidgetItem(QString::number(i+1));
-        numItem->setData(Qt::UserRole, t->id);
-        ui->timersTable->setItem(i, 1, numItem);
+        // Чекбокс
+        QCheckBox *check = new QCheckBox();
+        timerTable->setCellWidget(i, 0, check);
+        connect(check, &QCheckBox::stateChanged, this, &MainWindow::updateEditButtonVisibility);
 
         // Назва
-        ui->timersTable->setItem(i, 2, new QTableWidgetItem(t->name));
+        timerTable->setItem(i, 1, new QTableWidgetItem(t->name));
 
         // Час
-        ui->timersTable->setItem(i, 3, new QTableWidgetItem(formatTime(t->remainingSeconds)));
+        timerTable->setItem(i, 2, new QTableWidgetItem(formatTime(t->remainingSeconds)));
 
-        // Старт/Стоп кнопка
-        QPushButton* startStopBtn = new QPushButton(t->running ? "Стоп" : "Старт");
-        ui->timersTable->setCellWidget(i, 4, startStopBtn);
-        connect(startStopBtn, &QPushButton::clicked, this, [this, t](){
-            if(t->running) handleRowStop(t->id);
-            else handleRowStart(t->id);
+        // Статус
+        timerTable->setItem(i, 3, new QTableWidgetItem(t->running ? "Біжить" : "Пауза"));
+
+        // Дії: Старт/Стоп + Видалити
+        QWidget *actionWidget = new QWidget();
+        QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
+        actionLayout->setContentsMargins(2,2,2,2);
+
+        QPushButton *toggleBtn = new QPushButton("Старт/Стоп");
+        QPushButton *deleteBtn = new QPushButton("Видалити");
+
+        actionLayout->addWidget(toggleBtn);
+        actionLayout->addWidget(deleteBtn);
+
+        timerTable->setCellWidget(i, 4, actionWidget);
+
+        connect(toggleBtn, &QPushButton::clicked, this, [=]() {
+            if (t->running) manager->pauseTimer(t->id);
+            else manager->startTimer(t->id);
+            refreshTable();
         });
 
-        // Видалити рядок
-        QPushButton* deleteBtn = new QPushButton("Видалити");
-        ui->timersTable->setCellWidget(i, 5, deleteBtn);
-        connect(deleteBtn, &QPushButton::clicked, this, [this, t](){
-            handleRowDelete(t->id);
+        connect(deleteBtn, &QPushButton::clicked, this, [=]() {
+            manager->removeTimer(t->id);
+            refreshTable();
         });
     }
 
     updateEditButtonVisibility();
 }
 
+// Визначаємо чи можна натиснути "Редагувати"
 void MainWindow::updateEditButtonVisibility()
 {
-    int selectedCount = getSelectedTimerIds().size();
-    ui->editButton->setVisible(selectedCount == 1);
+    int selectedCount = 0;
+    for (int row = 0; row < timerTable->rowCount(); ++row) {
+        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        if (check && check->isChecked()) selectedCount++;
+    }
+    editButton->setEnabled(selectedCount == 1);
 }
 
-// --- Кнопки знизу ---
+// Дії кнопок
 void MainWindow::onAddTimer()
 {
-    // твоя логіка додавання таймера
+    EditTimerDialog dlg(this);
+    dlg.exec();
+    refreshTable();
 }
 
 void MainWindow::onStartSelected()
 {
-    for(int id : getSelectedTimerIds()) manager->startTimer(id);
+    for (int row = 0; row < timerTable->rowCount(); ++row) {
+        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        if (check && check->isChecked()) {
+            TimerEntry* t = manager->getAllTimersPointers()[row];
+            manager->startTimer(t->id);
+        }
+    }
+    refreshTable();
 }
 
 void MainWindow::onStopSelected()
 {
-    for(int id : getSelectedTimerIds()) manager->pauseTimer(id);
+    for (int row = 0; row < timerTable->rowCount(); ++row) {
+        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        if (check && check->isChecked()) {
+            TimerEntry* t = manager->getAllTimersPointers()[row];
+            manager->pauseTimer(t->id);
+        }
+    }
+    refreshTable();
 }
 
 void MainWindow::onDeleteSelected()
 {
-    for(int id : getSelectedTimerIds()) manager->removeTimer(id);
-    refreshTimersTable();
+    for (int row = timerTable->rowCount()-1; row >=0 ; --row) {
+        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        if (check && check->isChecked()) {
+            TimerEntry* t = manager->getAllTimersPointers()[row];
+            manager->removeTimer(t->id);
+        }
+    }
+    refreshTable();
 }
 
 void MainWindow::onEditSelected()
 {
-    QSet<int> selected = getSelectedTimerIds();
-    if(selected.size() != 1) return;
-    int editId = *selected.begin();
-    TimerEntry* t = manager->getTimerById(editId);
-    if(!t) return;
+    int editId = -1;
+    for (int row = 0; row < timerTable->rowCount(); ++row) {
+        QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
+        if (check && check->isChecked()) {
+            editId = manager->getAllTimersPointers()[row]->id;
+            break;
+        }
+    }
+    if (editId == -1) return;
+
+    TimerEntry* entry = manager->getTimerById(editId);
+    if (!entry) return;
 
     EditTimerDialog dlg(this);
-    dlg.setTimerData(t);
-    if(dlg.exec() == QDialog::Accepted) {
-        manager->updateTimer(editId, dlg.getTimerName(), dlg.getDurationSeconds());
-        refreshTimersTable();
-    }
-}
+    dlg.setTimerData(entry);
 
-// --- Кнопки всередині таблиці ---
-void MainWindow::handleRowStart(int id) { manager->startTimer(id); }
-void MainWindow::handleRowStop(int id)  { manager->pauseTimer(id); }
-void MainWindow::handleRowDelete(int id) {
-    manager->removeTimer(id);
-    refreshTimersTable();
+    connect(&dlg, &EditTimerDialog::timerEdited, this, [=](const QString&, const QString &newName, qint64 duration){
+        if (!manager->isNameUnique(newName, editId)) {
+            QMessageBox::warning(this, "Помилка", "Назва має бути унікальною");
+            return;
+        }
+        manager->updateTimer(editId, newName, duration);
+        refreshTable();
+    });
+
+    dlg.exec();
+    refreshTable();
 }

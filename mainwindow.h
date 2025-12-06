@@ -2,12 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSet>
+#include <QTableWidget>
+#include <QPushButton>
+#include <QCheckBox>
 #include "TimerManager.h"
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+#include "EditTimerDialog.h"
 
 class MainWindow : public QMainWindow
 {
@@ -24,19 +23,20 @@ private slots:
     void onDeleteSelected();
     void onEditSelected();
 
-    void handleRowStart(int id);
-    void handleRowStop(int id);
-    void handleRowDelete(int id);
-
-    void refreshTimersTable();
+    void refreshTable();
     void updateEditButtonVisibility();
 
 private:
-    Ui::MainWindow *ui;
+    QTableWidget *timerTable;
+    QPushButton *addButton;
+    QPushButton *startButton;
+    QPushButton *stopButton;
+    QPushButton *deleteButton;
+    QPushButton *editButton;
+
     TimerManager *manager;
 
     QString formatTime(int totalSeconds) const;
-    QSet<int> getSelectedTimerIds() const;
 };
 
 #endif // MAINWINDOW_H

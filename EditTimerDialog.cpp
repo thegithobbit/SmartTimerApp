@@ -24,11 +24,10 @@ void EditTimerDialog::setupUi()
     inputLayout->addWidget(new QLabel(tr("Назва:")), 0, 0);
     inputLayout->addWidget(nameEdit, 0, 1, 1, 2);
 
-    // Поля для тривалості
+    // Тривалість
     durationHours = new QSpinBox();
     durationMinutes = new QSpinBox();
     durationSeconds = new QSpinBox();
-
     durationHours->setRange(0, 99);
     durationMinutes->setRange(0, 59);
     durationSeconds->setRange(0, 59);
@@ -93,27 +92,4 @@ void EditTimerDialog::on_save_clicked()
 
     emit timerEdited(currentId, name, totalDurationSeconds);
     accept();
-}
-
-// ✅ Геттери для MainWindow
-QString EditTimerDialog::getTimerName() const
-{
-    return nameEdit->text().trimmed();
-}
-
-qint64 EditTimerDialog::getDurationSeconds() const
-{
-    return static_cast<qint64>(durationHours->value()) * 3600 +
-           static_cast<qint64>(durationMinutes->value()) * 60 +
-           static_cast<qint64>(durationSeconds->value());
-}
-
-void EditTimerDialog::setSaveButtonEnabled(bool enabled)
-{
-    saveButton->setEnabled(enabled);
-}
-
-QLineEdit* EditTimerDialog::getNameEdit() const
-{
-    return nameEdit;
 }

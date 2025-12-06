@@ -19,11 +19,12 @@ public:
 
     void setTimerData(TimerEntry *entry);
 
-    // ✅ Геттери для MainWindow
-    QString getTimerName() const;
-    qint64 getDurationSeconds() const;
-    void setSaveButtonEnabled(bool enabled);
-    QLineEdit* getNameEdit() const;
+    // ✅ Гетери для доступу до полів
+    QLineEdit* getNameEdit() const { return nameEdit; }
+    QSpinBox* getHours() const { return durationHours; }
+    QSpinBox* getMinutes() const { return durationMinutes; }
+    QSpinBox* getSeconds() const { return durationSeconds; }
+    void setSaveButtonEnabled(bool enabled) { saveButton->setEnabled(enabled); }
 
 private slots:
     void on_save_clicked();
