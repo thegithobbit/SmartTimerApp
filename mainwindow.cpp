@@ -4,6 +4,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QTableWidgetItem>
+#include <QHeaderView>
 #include <QHBoxLayout>
 #include <QPushButton>
 
@@ -21,7 +22,9 @@ MainWindow::MainWindow(QWidget *parent)
     timerTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     timerTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     timerTable->setFocusPolicy(Qt::NoFocus);
-
+    timerTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    timerTable->horizontalHeader()->setHighlightSections(false);
+    timerTable->horizontalHeader()->setFocusPolicy(Qt::NoFocus);
 
     addButton = new QPushButton("Додати таймер", this);
     addButton->setGeometry(10, 320, 120, 30);
