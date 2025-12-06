@@ -4,6 +4,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QCheckBox>
+#include "AddTimerDialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), manager(new TimerManager(this))
@@ -138,19 +139,17 @@ void MainWindow::onAddTimer()
 {
     AddTimerDialog dlg(this);
 
-    connect(&dlg, &AddTimerDialog::timerAdded, this, [=](const QString &name, qint64 duration){
+    connect(&dlg, &AddTimerDialog::timerCreated, this, [=](const QString &name, int durationSeconds){
         if (!manager->isNameUnique(name)) {
             QMessageBox::warning(this, "Помилка", "Назва має бути унікальною");
             return;
         }
-        manager->addTimer(name, duration);
+        manager->addTimer(name, durationSeconds);
         refreshTable();
     });
 
     dlg.exec();
-    refreshTable();
 }
-
 
 void MainWindow::onStopSelected()
 {
