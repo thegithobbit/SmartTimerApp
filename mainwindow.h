@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QSystemTrayIcon>
 #include <QCloseEvent>
 #include "TimerManager.h"
@@ -25,8 +26,9 @@ private slots:
     void on_addTimer_clicked();
     void on_startAll_clicked();
     void on_stopAll_clicked();
-    void on_deleteTimer_clicked();
-    void on_toggleTimer_clicked();
+    void on_deleteTimer_clicked();       // Видалити один вибраний через кнопки в рядку
+    void on_toggleTimer_clicked();       // Старт/Стоп один вибраний через кнопки в рядку
+    void deleteSelectedTimers();         // Видалити всі відмічені через чекбокси
 
     // Оновлення таблиці
     void updateTimerList(const QList<TimerEntry*>& timers);
@@ -39,13 +41,13 @@ private:
     QPushButton *addButton;
     QPushButton *startButton;
     QPushButton *stopButton;
-    QPushButton *deleteButton;
+    QPushButton *deleteButton;          // Видалити обране
     QPushButton *toggleButton;
 
     // Менеджер таймерів
     TimerManager *manager;
 
-    // Подія закриття (необов'язкова, але реалізувати можна)
+    // Подія закриття (можна реалізувати, якщо потрібно)
     void closeEvent(QCloseEvent *event) override {}
 };
 
