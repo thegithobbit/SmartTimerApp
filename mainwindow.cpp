@@ -153,13 +153,16 @@ void MainWindow::onAddTimer()
 
 void MainWindow::onStartSelected()
 {
+    QList<TimerEntry*> timers = manager->getAllTimersPointers();
+
     for (int row = 0; row < timerTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
-            TimerEntry* t = manager->getAllTimersPointers()[row];
+            TimerEntry* t = timers[row]; // беремо таймер, що відповідає рядку
             manager->startTimer(t->id);
         }
     }
+
     refreshTable();
 }
 
