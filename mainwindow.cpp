@@ -112,60 +112,83 @@ void MainWindow::on_toggleTimer_clicked()
 // === Оновлення таблиці ===
 void MainWindow::updateTimerList(const QList<TimerEntry*>& timers)
 {
+    // === 1. ЗБЕРЕГАЄМО СТАН ЧЕКБОКСІВ ===
+    QSet<int> checkedIds;
+
+    for (int i = 0; i < timerTable->rowCount(); ++i) {
+        QWidget *cell = timerTable->cellWidget(i, 0);
+        if (!cell) continue;
+
+        QCheckBox *check = cell->findChild<QCheckBox*>();
+        if (check && check->isChecked()) {
+            int id = timerTable->item(i, 1)->data(Qt::UserRole).toInt();
+            checkedIds.insert(id);
+        }
+    }
+
     timerTable->setRowCount(timers.size());
 
+    // === 2. ПЕРЕСОЗДАЄМО РЯДКИ, АЛЕ ПОТІМ ВІДНОВИМО ГАЛОЧКИ ===
     for (int i = 0; i < timers.size(); ++i)
     {
         TimerEntry* t = timers[i];
 
-        // Чекбокс
+        // === Колонка 0: checkbox ===
         QCheckBox *check = new QCheckBox();
         QWidget *checkWidget = new QWidget();
         QHBoxLayout *checkLayout = new QHBoxLayout(checkWidget);
         checkLayout->addWidget(check);
         checkLayout->setAlignment(Qt::AlignCenter);
         checkLayout->setContentsMargins(0,0,0,0);
-        checkWidget->setLayout(checkLayout);
         timerTable->setCellWidget(i, 0, checkWidget);
 
-        // Назва, залишилось, статус
+        // === Колонка 1: Назва (і зберігаємо ID!!!) ===
         QTableWidgetItem *nameItem = new QTableWidgetItem(t->name);
-        QTableWidgetItem *remainingItem = new QTableWidgetItem(QString::number(t->remainingSeconds));
-        QTableWidgetItem *statusItem = new QTableWidgetItem(t->running ? "Біжить" : "Пауза");
-
-        // Зробимо текст чорним та недоступним для редагування
-        nameItem->setFlags(nameItem->flags() & ~Qt::ItemIsEditable);
-        remainingItem->setFlags(remainingItem->flags() & ~Qt::ItemIsEditable);
-        statusItem->setFlags(statusItem->flags() & ~Qt::ItemIsEditable);
-
+        nameItem->setData(Qt::UserRole, t->id);
         timerTable->setItem(i, 1, nameItem);
-        timerTable->setItem(i, 2, remainingItem);
-        timerTable->setItem(i, 3, statusItem);
 
-        // Кнопки Старт/Стоп і Видалити
+        // === Колонка 2: Залишилось ===
+        timerTable->setItem(i, 2, new QTableWidgetItem(QString::number(t->remainingSeconds)));
+
+        // === Колонка 3: Статус ===
+        timerTable->setItem(i, 3, new QTableWidgetItem(t->running ? "Біжить" : "Пауза"));
+
+        // === Колонка 4: кнопки ===
         QPushButton *toggleBtn = new QPushButton("Старт/Стоп");
         QPushButton *deleteBtn = new QPushButton("Видалити");
+
         QWidget *actions = new QWidget();
         QHBoxLayout *layout = new QHBoxLayout(actions);
         layout->addWidget(toggleBtn);
         layout->addWidget(deleteBtn);
-        layout->setContentsMargins(2,2,2,2);
-        actions->setLayout(layout);
+        layout->setContentsMargins(2, 2, 2, 2);
         timerTable->setCellWidget(i, 4, actions);
 
-        // Логіка кнопок у рядку
+        // Логіка
         connect(toggleBtn, &QPushButton::clicked, this, [=]() {
             if (t->running) manager->pauseTimer(t->id);
             else manager->startTimer(t->id);
-            updateTimerList(manager->getAllTimersPointers());
         });
 
         connect(deleteBtn, &QPushButton::clicked, this, [=]() {
             manager->removeTimer(t->id);
-            updateTimerList(manager->getAllTimersPointers());
         });
     }
+
+    // === 3. ВІДНОВЛЮЄМО ГАЛОЧКИ ===
+    for (int i = 0; i < timers.size(); ++i) {
+        int id = timerTable->item(i, 1)->data(Qt::UserRole).toInt();
+
+        QWidget *cell = timerTable->cellWidget(i, 0);
+        if (!cell) continue;
+
+        QCheckBox *check = cell->findChild<QCheckBox*>();
+        if (!check) continue;
+
+        check->setChecked(checkedIds.contains(id));
+    }
 }
+
 
 // Видалити всі відмічені таймери
 void MainWindow::deleteSelectedTimers()
