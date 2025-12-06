@@ -151,13 +151,13 @@ void MainWindow::onAddTimer()
     dlg.exec();
 }
 
-void MainWindow::onStopSelected()
+void MainWindow::onStartSelected()
 {
     for (int row = 0; row < timerTable->rowCount(); ++row) {
         QCheckBox *check = qobject_cast<QCheckBox*>(timerTable->cellWidget(row, 0));
         if (check && check->isChecked()) {
             TimerEntry* t = manager->getAllTimersPointers()[row];
-            manager->pauseTimer(t->id);
+            manager->startTimer(t->id);
         }
     }
     refreshTable();
