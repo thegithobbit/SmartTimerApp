@@ -34,6 +34,9 @@ public:
 
     bool isNameUnique(const QString &name, int excludeId = -1) const;
 
+    // ✅ Зробили публічним
+    TimerEntry* getTimerById(int id);
+
 signals:
     void timerUpdated(int id, int remainingSeconds, bool running);
     void timerFinished(int id);
@@ -44,8 +47,6 @@ private slots:
 private:
     int nextId;
     QVector<TimerEntry> timers;
-
-    TimerEntry* getTimerById(int id);
 };
 
 #endif // TIMERMANAGER_H
