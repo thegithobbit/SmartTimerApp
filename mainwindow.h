@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QList>
+#include <QSet>
 #include "TimerManager.h"
 
 QT_BEGIN_NAMESPACE
@@ -18,21 +19,19 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_addTimerButton_clicked();
-    void on_startSelectedButton_clicked();
-    void on_pauseSelectedButton_clicked();
-    void on_deleteSelectedButton_clicked();
-    void on_editSelectedButton_clicked();
+    void onAddTimer();
+    void onStartSelected();
+    void onStopSelected();
+    void onEditSelected();
 
-    void handleTimerUpdated(int id, int remaining, bool running);
-    void handleTimerFinished(int id);
+    void refreshTimersTable();
+    void updateEditButtonVisibility();
 
 private:
-    Ui::MainWindow *ui;          // <- оце ЗНИКЛО у тебе!
+    Ui::MainWindow *ui;       // Обов'язково має бути!
     TimerManager *manager;
 
-    void refreshTable();
-    QList<int> getSelectedTimerIds() const;
+    QString formatTime(int totalSeconds) const;
 };
 
 #endif // MAINWINDOW_H
