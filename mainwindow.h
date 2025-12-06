@@ -29,6 +29,7 @@ private slots:
     void on_deleteTimer_clicked();       // Видалити один вибраний через кнопки в рядку
     void on_toggleTimer_clicked();       // Старт/Стоп один вибраний через кнопки в рядку
     void deleteSelectedTimers();         // Видалити всі відмічені через чекбокси
+    void toggleSelectedTimers();         // Старт/Стоп всі відмічені через чекбокси
 
     // Оновлення таблиці
     void updateTimerList(const QList<TimerEntry*>& timers);
@@ -42,7 +43,7 @@ private:
     QPushButton *startButton;
     QPushButton *stopButton;
     QPushButton *deleteButton;          // Видалити обране
-    QPushButton *toggleButton;
+    QPushButton *toggleButton;          // Старт/Стоп обране
 
     // Менеджер таймерів
     TimerManager *manager;
