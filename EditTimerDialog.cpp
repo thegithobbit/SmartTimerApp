@@ -96,3 +96,27 @@ void EditTimerDialog::on_save_clicked()
     emit timerEdited(currentId, name, totalDurationSeconds);
     accept();
 }
+
+QString EditTimerDialog::getTimerName() const {
+    return nameEdit->text();
+}
+
+void EditTimerDialog::setTimerName(const QString &name) {
+    nameEdit->setText(name);
+}
+
+qint64 EditTimerDialog::getDurationSeconds() const {
+    return static_cast<qint64>(durationHours->value()) * 3600 +
+           static_cast<qint64>(durationMinutes->value()) * 60 +
+           static_cast<qint64>(durationSeconds->value());
+}
+
+void EditTimerDialog::setDuration(qint64 totalSeconds) {
+    durationHours->setValue(totalSeconds / 3600);
+    durationMinutes->setValue((totalSeconds % 3600) / 60);
+    durationSeconds->setValue(totalSeconds % 60);
+}
+
+void EditTimerDialog::setSaveButtonEnabled(bool enabled) {
+    saveButton->setEnabled(enabled);
+}

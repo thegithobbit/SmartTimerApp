@@ -9,8 +9,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
-// не включаємо TimerManager.h тут
-struct TimerEntry; // <-- forward declaration
+struct TimerEntry; // forward declaration
 
 class EditTimerDialog : public QDialog
 {
@@ -20,11 +19,20 @@ public:
 
     void setTimerData(TimerEntry *entry);
 
-private slots:
-    void on_save_clicked();
+    // ✅ нові публічні методи
+    QString getTimerName() const;
+    void setTimerName(const QString &name);
+
+    qint64 getDurationSeconds() const;
+    void setDuration(qint64 totalSeconds);
+
+    void setSaveButtonEnabled(bool enabled);
 
 signals:
     void timerEdited(const QString& id, const QString& name, qint64 durationSeconds);
+
+private slots:
+    void on_save_clicked();
 
 private:
     QString currentId;
